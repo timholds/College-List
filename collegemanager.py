@@ -7,10 +7,13 @@ from flask import request
 from flask import flash
 from flask import jsonify
 from flask import url_for
+#from datetime import datetime
+from _datetime import datetime
+#from _datetime import now
 
 from flask_login import LoginManager, login_user, logout_user , current_user , login_required
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from forms import SignupForm
@@ -52,6 +55,7 @@ class User(db.Model):
     def __init__(self, email, password):
         self.password = password
         self.email = email
+        self.registered_on = datetime.now()
 
     def is_authenticated(self):
         return True
@@ -102,26 +106,32 @@ def signup():
 def register():
     if request.method == 'GET':
         return render_template('register.html')
-    user = User(request.form['email'], request.form['password'])
-    db.session.add(user)
-    db.session.commit()
-    flash('User successfully registered')
-    return redirect(url_for('login'))
+    if request.method == 'POST':
+        try:
+            user = User(request.form['email'], request.form['password'])
+            db.session.add(user)
+            db.session.commit()
+            flash('User successfully registered')
+            return redirect(url_for('login'))
+        except IntegrityError:
+            flash('User not registered. Perhaps this email address has already been used')
+            return redirect(url_for('register'))
 
 
 @app.route('/login',methods=['GET','POST'])
 def login():
     if request.method == 'GET':
         return render_template('login.html')
-    email = request.form['email']
-    password = request.form['password']
-    registered_user = User.query.filter_by(email=email,password=password).first()
-    if registered_user is None:
-        flash('Username or Password is invalid' , 'error')
-        return redirect(url_for('login'))
-    login_user(registered_user)
-    flash('Logged in successfully')
-    return redirect(request.args.get('next') or url_for('index'))
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        registered_user = User.query.filter_by(email=email,password=password).first()
+        if registered_user is None:
+            flash('Username or Password is invalid' , 'error')
+            return redirect(url_for('login'))
+        login_user(registered_user)
+        flash('Logged in successfully')
+        return redirect(request.args.get('next') or url_for('index'))
 
 """
 # User Signup Api try #2
