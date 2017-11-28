@@ -1,3 +1,4 @@
+{% from "_formhelpers.html" import render_field %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,11 +16,24 @@
   {% endif %}
   {% endwith %}
     <h1>Sign-up</h1>
+    <form method=post>
+      <dl>
+        {{ render_field(form.email) }}
+        {{ render_field(form.password) }}
+        {{ render_field(form.submit) }}
+      </dl>
+      <p><input type=submit value=Register>
+    </form>
+  <!---
     <form method="POST" action="/signup">
         {{ form.hidden_tag() }}
-        {{ form.email.label }} {{ form.email(size=20) }}
-        {{ form.password.label }} {{ form.password(size=20) }}
+        {{ form.email}}
+        {{ form.password}}
         <input type="submit" value="Signup">
     </form>
 </body>
 </html>
+-->
+
+
+<!--{{ form.email(size=20) }} {{ form.password(size=20) }} -->
