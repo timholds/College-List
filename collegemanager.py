@@ -25,23 +25,25 @@ if college is (already in the database):
 """
 
 class College(db.Model):
-    schoolname = db.Column(db.String(80), unique=True, nullable=False, primary_key=True)
-
+    schoolname = db.Column(db.String(80, collation='NOCASE'), unique=True, nullable=False, primary_key=True)
     def __repr__(self):
         return "<schoolname: {}>".format(self.schoolname)
 
+
+
+@app.route('/', methods=["GET", "POST"])
 @app.route('/home', methods=["GET", "POST"])
 def home():
     colleges = None
     if request.form:
         try:
+            #db.session.query(College).delete()
             college = College(schoolname=request.form.get("schoolname"))
             db.session.add(college)
             db.session.commit()
         except SQLAlchemyError:
             flash("Failed to add college, as it might be a duplicate")
-            #return redirect("http://localhost:5000")
-            return redirect(url_for('/home'))
+            return redirect(url_for('home'))
 
     colleges = College.query.all()
     return render_template("home.html", colleges=colleges)
