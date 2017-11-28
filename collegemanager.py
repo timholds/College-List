@@ -7,9 +7,7 @@ from flask import request
 from flask import flash
 from flask import jsonify
 from flask import url_for
-#from datetime import datetime
 from _datetime import datetime
-#from _datetime import now
 
 from flask_login import LoginManager, login_user, logout_user , current_user , login_required
 from flask_sqlalchemy import SQLAlchemy
@@ -49,13 +47,13 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=True, nullable=False)
-    registered_on = db.Column(db.DateTime, server_default=db.func.now())
+    created_on = db.Column(db.DateTime, server_default=db.func.now())
     updated_on = db.Column(db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now())
 
     def __init__(self, email, password):
         self.password = password
         self.email = email
-        self.registered_on = datetime.now()
+        self.created_on = datetime.now()
 
     def is_authenticated(self):
         return True
@@ -67,7 +65,7 @@ class User(db.Model):
         return False
 
     def get_id(self):
-        return unicodedata(self.id)
+        return (self.id)
 
     @classmethod
     def is_email_taken(cls, email):
@@ -131,50 +129,8 @@ def login():
             return redirect(url_for('login'))
         login_user(registered_user)
         flash('Logged in successfully')
-        return redirect(request.args.get('next') or url_for('index'))
+        return redirect(request.args.get('next') or url_for('home'))
 
-"""
-# User Signup Api try #2
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    form = SignupForm(request.form)
-    if request.method == 'GET':
-        return render_template('signup.html', form = form)
-    elif request.method == 'POST':
-        try:
-            email = User(email=request.form.get("email"))
-            password = User(password=request.form.get("password"))
-            hashed_password = generate_password_hash(password, method='sha256')
-            new_user = User(email=email, password=hashed_password)
-            db.session.add(new_user)
-            db.session.commit()
-        except (TypeError, SQLAlchemyError):
-            flash("Failed to sign up user")
-            print("Failed")
-            return redirect(url_for('signup'))
-
-        if form.validate_on_submit():
-            if User.query.filter_by(email = email) != None:
-                print('User Exists')
-            else:
-                return "will create user here"
-        else:
-            return "Form didn't validate"
-"""
-
-"""
-# User Signup API try #3
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    form = RegistrationForm(request.form)
-    if request.method == 'POST' and form.validate():
-        user = User(form.username.data, form.email.data,
-                    form.hased_password.data)
-        db.add(user)
-        flash('Thanks for registering')
-        return redirect(url_for('login'))
-    return render_template('register.html', form=form)
-"""
 
 @app.route('/', methods=["GET", "POST"])
 @app.route('/home', methods=["GET", "POST"])
