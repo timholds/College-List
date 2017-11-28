@@ -1,5 +1,5 @@
 import os
-
+import unicodedata
 from flask import Flask
 from flask import redirect
 from flask import render_template
@@ -7,18 +7,13 @@ from flask import request
 from flask import flash
 from flask import jsonify
 from flask import url_for
-from flask.ext.login import LoginManager
 
-#from datetime import utc
-from forms import SignupForm
-#from models import db
-
-#from flask_restful import resource
-
+from flask_login import LoginManager, login_user, logout_user , current_user , login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
-
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from forms import SignupForm
 
 project_dir = os.path.dirname(os.path.abspath(__file__))
 database_file = "sqlite:///{}".format(os.path.join(project_dir, "collegedatabase.db"))
@@ -26,7 +21,6 @@ database_file = "sqlite:///{}".format(os.path.join(project_dir, "collegedatabase
 app = Flask(__name__)
 app.secret_key = 'QWERTY'
 app.config["SQLALCHEMY_DATABASE_URI"] = database_file
-
 db = SQLAlchemy(app)
 
 login_manager = LoginManager()
@@ -48,7 +42,7 @@ class College(db.Model):
         return "<schoolname: {}>".format(self.schoolname)
 
 class User(db.Model):
-    __tablename__ = "users"
+    #__tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=True, nullable=False)
@@ -58,6 +52,18 @@ class User(db.Model):
     def __init__(self, email, password):
         self.password = password
         self.email = email
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return unicodedata(self.id)
 
     @classmethod
     def is_email_taken(cls, email):
@@ -103,11 +109,19 @@ def register():
     return redirect(url_for('login'))
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login',methods=['GET','POST'])
 def login():
     if request.method == 'GET':
         return render_template('login.html')
-    return redirect(url_for('index'))
+    email = request.form['email']
+    password = request.form['password']
+    registered_user = User.query.filter_by(email=email,password=password).first()
+    if registered_user is None:
+        flash('Username or Password is invalid' , 'error')
+        return redirect(url_for('login'))
+    login_user(registered_user)
+    flash('Logged in successfully')
+    return redirect(request.args.get('next') or url_for('index'))
 
 """
 # User Signup Api try #2
