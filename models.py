@@ -2,7 +2,7 @@ from collegemanager import db
 from flask_sqlalchemy import SQLAlchemy
 
 class User(db.Model):
-    #__tablename__ = "users"
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=True, nullable=False)
@@ -34,6 +34,7 @@ class User(db.Model):
         return '<User %r>' % (self.email)
 
 class College(db.Model):
+    __tablename__ = 'college'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     schoolname = db.Column(db.String(80), unique=True, nullable=False, primary_key=True)
 
@@ -43,6 +44,7 @@ class College(db.Model):
 
 
 class Traits(db.Model):
+    __tablename__ = 'traits'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     trait_name = db.Column(db.String, unique=True)
 
@@ -51,10 +53,14 @@ class Traits(db.Model):
 
 
 class Votes(db.Model):
+    __tablename__ = 'votes'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    # TODO make this an integer between 1 and 5
-    vote = db.Column(db.Integer)
+    # TODO figure out how to get the trait id
+    trait_id = db.Column(db.Integer)
     # TODO figure out how to get the user id
     user_id = db.Column(db.Integer)
+    # TODO make this an integer between 1 and 5
+    vote = db.Column(db.Integer)
+
     def __repr__(self):
         return '<User %r>' % (self.id)
