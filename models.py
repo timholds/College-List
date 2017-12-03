@@ -1,5 +1,12 @@
 from collegemanager import db
 from flask_sqlalchemy import SQLAlchemy
+import os
+
+from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -37,6 +44,7 @@ class College(db.Model):
     __tablename__ = 'college'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     schoolname = db.Column(db.String(80), unique=True, nullable=False, primary_key=True)
+    student_ids = db.Column(db.Integer, unique=True,)
 
     def __repr__(self):
         return "<schoolname: {}>".format(self.schoolname)
@@ -64,3 +72,29 @@ class Votes(db.Model):
 
     def __repr__(self):
         return '<User %r>' % (self.id)
+
+
+class College(Base):
+    __tablename__ = 'college'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    users = relationship(
+        'User',
+        secondary='college_user_link'
+    )
+
+
+class User(Base):
+    __tablename__ = 'user'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    college = relationship(
+        College,
+        secondary='college_employee_link'
+    )
+
+
+class DepartmentEmployeeLink(Base):
+    __tablename__ = 'college_user_link'
+    college_id = Column(Integer, ForeignKey('college.id'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
