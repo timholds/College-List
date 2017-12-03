@@ -1,5 +1,4 @@
 import os
-import unicodedata
 from flask import Flask
 from flask import redirect
 from flask import render_template
@@ -8,13 +7,14 @@ from flask import flash
 from flask import jsonify
 from flask import url_for
 from _datetime import datetime
+from models import User, College
 
 from flask_login import LoginManager, login_user, logout_user , current_user , login_required
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from forms import SignupForm
+#from forms import SignupForm
 
 project_dir = os.path.dirname(os.path.abspath(__file__))
 database_file = "sqlite:///{}".format(os.path.join(project_dir, "collegedatabase.db"))
@@ -36,69 +36,6 @@ def init_db():
     db.init_app(app)
     db.app = app
     db.create_all()
-
-class College(db.Model):
-    schoolname = db.Column(db.String(80), unique=True, nullable=False, primary_key=True)
-    def __repr__(self):
-        return "<schoolname: {}>".format(self.schoolname)
-
-class User(db.Model):
-    #__tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    email = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(80), unique=True, nullable=False)
-    created_on = db.Column(db.DateTime, server_default=db.func.now())
-    updated_on = db.Column(db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now())
-
-    def __init__(self, email, password):
-        self.password = password
-        self.email = email
-        self.created_on = datetime.now()
-
-    def is_authenticated(self):
-        return True
-
-    def is_active(self):
-        return True
-
-    def is_anonymous(self):
-        return False
-
-    def get_id(self):
-        return (self.id)
-
-    @classmethod
-    def is_email_taken(cls, email):
-        return db.session.query(db.exists().where(User.email == email)).scalar()
-
-    def __repr__(self):
-        return '<User %r>' % (self.email)
-
-# User Signup Api
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    form = SignupForm(request.form)
-    print("The request.json value is")
-    print(request.json)
-    if request.method == 'GET':
-        return render_template('signup.html', form=form)
-    if request.method == 'POST':
-        if 'email' not in request.json:
-            return jsonify({'email': 'must include email'})
-        if 'password' not in request.json:
-            return jsonify({'password': 'must include password'})
-        if User.is_email_taken(request.json['email']):
-            return jsonify({'email': 'This email is already taken!'}), 409
-        if request.json:
-            hashed_password = generate_password_hash(request.json['password'], method='sha256')
-            #new_user = User(email=request.json['email'], password=hashed_password)
-            new_user = User(email=form.user, password=hashed_password)
-            db.session.add(new_user)
-            db.session.commit()
-            return jsonify({'user': 'user created successfully'}), 201
-        return jsonify({'password': 'must include password',
-                        'email': 'must include email'})
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -131,6 +68,15 @@ def login():
         flash('Logged in successfully')
         return redirect(request.args.get('next') or url_for('home'))
 
+@app.route('/protected')
+@login_required
+def protected():
+    return 'Logged in as: ' + current_user.id
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return 'Logged out'
 
 @app.route('/', methods=["GET", "POST"])
 @app.route('/home', methods=["GET", "POST"])
@@ -149,6 +95,36 @@ def home():
     colleges = College.query.all()
     return render_template("home.html", colleges=colleges)
 
+@app.route('/college', methods=["GET"])
+def college():
+    # Display all of the properties on the page
+    # Query the database to get the vote counts for each attribute of this college
+    # Display the page
+    if request.method=="GET":
+        # Calculate all of the
+        return render_template("college.html")
+    #Get the college page and dislay
+    if request.form:
+        try:
+            #db.session.query(College).delete()
+            college = College(schoolname=request.form.get("schoolname"))
+            db.session.add(college)
+            db.session.commit()
+        except SQLAlchemyError:
+            flash("Failed to add college, as it might be a duplicate")
+            return redirect(url_for('home'))
+    college =  College.query.all()
+    return render_template("college.html", college=college)
+
+@app.route('/<college>/<attribute>', methods=["PUT"])
+def college_attribute():
+    return redirect(url_for('<college>'))
+
+@app.route('/<college>/<attribute>/vote/', methods=["PUT"])
+def vote():
+    # Get the vote between 1 and 10 from the form
+    vote = request.form["Actual Value"]
+
 @app.route("/update", methods=["POST"])
 def update():
     try:
@@ -162,8 +138,8 @@ def update():
         print(e)
     return redirect("/")
 
-@app.route("/delete", methods=["POST"])
-def delete():
+@app.route("/<college>/delete", methods=["POST"])
+def college_delete():
     schoolname = request.form.get("schoolname")
     college = College.query.filter_by(schoolname=schoolname).first()
     db.session.delete(college)
@@ -173,3 +149,30 @@ def delete():
 if __name__ == "__main__":
     #app.init_db()
     app.run(port=5000, host='localhost', debug=True)
+
+"""
+# User Signup Api
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    form = SignupForm(request.form)
+    print("The request.json value is")
+    print(request.json)
+    if request.method == 'GET':
+        return render_template('signup.html', form=form)
+    if request.method == 'POST':
+        if 'email' not in request.json:
+            return jsonify({'email': 'must include email'})
+        if 'password' not in request.json:
+            return jsonify({'password': 'must include password'})
+        if User.is_email_taken(request.json['email']):
+            return jsonify({'email': 'This email is already taken!'}), 409
+        if request.json:
+            hashed_password = generate_password_hash(request.json['password'], method='sha256')
+            #new_user = User(email=request.json['email'], password=hashed_password)
+            new_user = User(email=form.user, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+            return jsonify({'user': 'user created successfully'}), 201
+        return jsonify({'password': 'must include password',
+                        'email': 'must include email'})
+"""
