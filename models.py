@@ -67,6 +67,8 @@ class Votes(db.Model):
     trait_id = db.Column(db.Integer)
     # TODO figure out how to get the user id
     user_id = db.Column(db.Integer)
+    # TODO get college id
+    college_id = db.Column(relationship)
     # TODO make this an integer between 1 and 5
     vote = db.Column(db.Integer)
 
@@ -94,7 +96,8 @@ class User(Base):
     )
 
 
-class DepartmentEmployeeLink(Base):
+class CollegeUserLink(Base):
     __tablename__ = 'college_user_link'
     college_id = Column(Integer, ForeignKey('college.id'), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+
